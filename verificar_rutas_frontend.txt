@@ -1,0 +1,69 @@
+### Verificar y Configurar las Rutas Disponibles para el Frontend
+
+Si el problema es que las rutas no están disponibles en el frontend, sigue estos pasos para solucionarlo:
+
+1. **Verificar el Archivo de Configuración**
+   - Asegúrate de que las variables de entorno necesarias estén configuradas correctamente. Por ejemplo, `NEXT_PUBLIC_API_URL` debe apuntar a la URL base de tu API.
+   - Si estás utilizando Next.js, verifica que las rutas dinámicas estén correctamente definidas en el archivo `pages`.
+
+2. **Definir las Rutas en el Backend**
+   - Asegúrate de que las rutas necesarias estén disponibles en el backend. Por ejemplo, para manejar páginas dinámicas, deberías tener algo como esto:
+     ```typescript
+     // Ejemplo de ruta dinámica en el backend
+     app.get('/pages/:id', (req, res) => {
+       const { id } = req.params;
+       // Lógica para obtener la página por ID
+       res.json({ id, title: 'Título de ejemplo', content: 'Contenido de ejemplo' });
+     });
+     ```
+
+3. **Probar las Rutas Manualmente**
+   - Usa herramientas como Postman o cURL para verificar que las rutas están funcionando correctamente. Por ejemplo:
+     ```bash
+     curl -X GET http://localhost:3003/api/pages/749af56b-c3bb-4138-93ef-df66456949c6
+     ```
+
+4. **Configurar el Frontend para Consumir las Rutas**
+   - Asegúrate de que el frontend esté utilizando correctamente las rutas de la API. Por ejemplo:
+     ```typescript
+     const fetchPage = async (id: string) => {
+       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pages/${id}`);
+       if (!response.ok) {
+         throw new Error('Error al obtener la página');
+       }
+       return response.json();
+     };
+
+     fetchPage('749af56b-c3bb-4138-93ef-df66456949c6')
+       .then(data => console.log('Página:', data))
+       .catch(error => console.error('Error:', error));
+     ```
+
+5. **Agregar Logs para Depuración**
+   - Agrega logs en el frontend para verificar que las rutas están siendo llamadas correctamente y que las respuestas son las esperadas:
+     ```typescript
+     console.log('Llamando a la API:', `${process.env.NEXT_PUBLIC_API_URL}/pages/${id}`);
+     ```
+
+6. **Verificar el Archivo `next.config.js`**
+   - Si estás utilizando Next.js, asegúrate de que las rutas dinámicas estén correctamente configuradas. Por ejemplo:
+     ```javascript
+     module.exports = {
+       async rewrites() {
+         return [
+           {
+             source: '/pages/:id',
+             destination: 'http://localhost:3003/api/pages/:id',
+           },
+         ];
+       },
+     };
+     ```
+
+7. **Probar en el Navegador**
+   - Abre el navegador y verifica que las rutas están funcionando correctamente. Por ejemplo, accede a `http://localhost:3000/pages/749af56b-c3bb-4138-93ef-df66456949c6` y verifica que los datos se muestran correctamente.
+
+8. **Verificar Errores en la Consola**
+   - Abre la consola del navegador y verifica si hay errores relacionados con las rutas o las llamadas a la API.
+
+Si necesitas más ayuda, asegúrate de compartir los errores específicos que encuentres.

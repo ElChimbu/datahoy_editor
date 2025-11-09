@@ -1,0 +1,76 @@
+### Adaptar el Frontend para Buscar Páginas por su Slug
+
+Si necesitas adaptar el frontend para buscar páginas por su slug en lugar de su ID, sigue estos pasos:
+
+1. **Verificar el Endpoint de la API**
+   - Asegúrate de que el endpoint de la API esté configurado correctamente para aceptar un slug como parámetro. Por ejemplo:
+     ```typescript
+     // Backend: Ruta para obtener una página por su slug
+     app.get('/pages/slug/:slug', (req, res) => {
+       const { slug } = req.params;
+       // Lógica para obtener la página por slug
+       res.json({ slug, title: 'Título de ejemplo', content: 'Contenido de ejemplo' });
+     });
+     ```
+
+2. **Actualizar la Función de Fetch en el Frontend**
+   - Modifica la función que realiza la solicitud para incluir el slug dinámico. Por ejemplo:
+     ```typescript
+     const fetchPageBySlug = async (slug: string) => {
+       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pages/slug/${slug}`);
+       if (!response.ok) {
+         throw new Error(`Error al obtener la página con slug ${slug}`);
+       }
+       return response.json();
+     };
+
+     // Ejemplo de uso
+     fetchPageBySlug('mi-pagina-ejemplo')
+       .then(data => console.log('Página obtenida:', data))
+       .catch(error => console.error('Error:', error));
+     ```
+
+3. **Integrar la Función en el Componente**
+   - Si estás utilizando React, puedes integrar la función en un efecto o manejador de eventos. Por ejemplo:
+     ```typescript
+     import { useEffect, useState } from 'react';
+
+     const PageComponent = ({ pageSlug }: { pageSlug: string }) => {
+       const [page, setPage] = useState(null);
+       const [error, setError] = useState(null);
+
+       useEffect(() => {
+         fetchPageBySlug(pageSlug)
+           .then(data => setPage(data))
+           .catch(err => setError(err.message));
+       }, [pageSlug]);
+
+       if (error) return <div>Error: {error}</div>;
+       if (!page) return <div>Cargando...</div>;
+
+       return (
+         <div>
+           <h1>{page.title}</h1>
+           <p>{page.content}</p>
+         </div>
+       );
+     };
+
+     export default PageComponent;
+     ```
+
+4. **Probar la Funcionalidad**
+   - Asegúrate de que el componente recibe el `pageSlug` correcto y que la API devuelve los datos esperados.
+   - Verifica en la consola del navegador que no haya errores y que las solicitudes se realicen correctamente.
+
+5. **Agregar Logs para Depuración**
+   - Agrega logs para verificar que el slug se está pasando correctamente y que la respuesta de la API es la esperada:
+     ```typescript
+     console.log('Buscando página con slug:', pageSlug);
+     console.log('Respuesta de la API:', page);
+     ```
+
+6. **Verificar Errores en la Consola**
+   - Si encuentras errores, verifica el estado de la respuesta y el mensaje de error para identificar el problema.
+
+Con estos pasos, deberías poder adaptar el frontend para buscar páginas por su slug correctamente.

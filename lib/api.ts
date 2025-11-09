@@ -1,6 +1,8 @@
 import { PageDefinition, ApiResponse } from '@/types/page';
+import { API_CONFIG } from './config';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// URL de la API
+const API_URL = API_CONFIG.url;
 
 export async function getPages(): Promise<ApiResponse<PageDefinition[]>> {
   try {
@@ -16,7 +18,7 @@ export async function getPages(): Promise<ApiResponse<PageDefinition[]>> {
 
 export async function getPageById(id: string): Promise<ApiResponse<PageDefinition>> {
   try {
-    const response = await fetch(`${API_URL}/pages/id/${id}`);
+    const response = await fetch(`${API_URL}/pages/${id}`);
     return await response.json();
   } catch (error) {
     return {
@@ -25,6 +27,7 @@ export async function getPageById(id: string): Promise<ApiResponse<PageDefinitio
     };
   }
 }
+
 
 export async function createPage(page: Omit<PageDefinition, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<PageDefinition>> {
   try {

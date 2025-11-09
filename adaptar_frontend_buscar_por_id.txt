@@ -1,0 +1,76 @@
+### Adaptar el Frontend para Buscar Páginas por su ID
+
+Si necesitas adaptar el frontend para buscar páginas por su ID, sigue estos pasos:
+
+1. **Verificar el Endpoint de la API**
+   - Asegúrate de que el endpoint de la API esté configurado correctamente para aceptar un ID como parámetro. Por ejemplo:
+     ```typescript
+     // Backend: Ruta para obtener una página por su ID
+     app.get('/pages/:id', (req, res) => {
+       const { id } = req.params;
+       // Lógica para obtener la página por ID
+       res.json({ id, title: 'Título de ejemplo', content: 'Contenido de ejemplo' });
+     });
+     ```
+
+2. **Actualizar la Función de Fetch en el Frontend**
+   - Modifica la función que realiza la solicitud para incluir el ID dinámico. Por ejemplo:
+     ```typescript
+     const fetchPageById = async (id: string) => {
+       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pages/${id}`);
+       if (!response.ok) {
+         throw new Error(`Error al obtener la página con ID ${id}`);
+       }
+       return response.json();
+     };
+
+     // Ejemplo de uso
+     fetchPageById('749af56b-c3bb-4138-93ef-df66456949c6')
+       .then(data => console.log('Página obtenida:', data))
+       .catch(error => console.error('Error:', error));
+     ```
+
+3. **Integrar la Función en el Componente**
+   - Si estás utilizando React, puedes integrar la función en un efecto o manejador de eventos. Por ejemplo:
+     ```typescript
+     import { useEffect, useState } from 'react';
+
+     const PageComponent = ({ pageId }: { pageId: string }) => {
+       const [page, setPage] = useState(null);
+       const [error, setError] = useState(null);
+
+       useEffect(() => {
+         fetchPageById(pageId)
+           .then(data => setPage(data))
+           .catch(err => setError(err.message));
+       }, [pageId]);
+
+       if (error) return <div>Error: {error}</div>;
+       if (!page) return <div>Cargando...</div>;
+
+       return (
+         <div>
+           <h1>{page.title}</h1>
+           <p>{page.content}</p>
+         </div>
+       );
+     };
+
+     export default PageComponent;
+     ```
+
+4. **Probar la Funcionalidad**
+   - Asegúrate de que el componente recibe el `pageId` correcto y que la API devuelve los datos esperados.
+   - Verifica en la consola del navegador que no haya errores y que las solicitudes se realicen correctamente.
+
+5. **Agregar Logs para Depuración**
+   - Agrega logs para verificar que el ID se está pasando correctamente y que la respuesta de la API es la esperada:
+     ```typescript
+     console.log('Buscando página con ID:', pageId);
+     console.log('Respuesta de la API:', page);
+     ```
+
+6. **Verificar Errores en la Consola**
+   - Si encuentras errores, verifica el estado de la respuesta y el mensaje de error para identificar el problema.
+
+Con estos pasos, deberías poder adaptar el frontend para buscar páginas por su ID correctamente.

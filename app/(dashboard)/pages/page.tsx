@@ -149,7 +149,7 @@ export default function PagesList() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4 pt-4 border-t">
-                  <Link href={`/pages/${page.id}`} className="flex-1">
+                  <Link href={`/pages/${page.slug}`} className="flex-1">
                     <Button variant="primary" size="sm" className="w-full">
                       <Edit className="h-4 w-4 mr-1" />
                       Editar

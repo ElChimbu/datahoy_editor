@@ -1,0 +1,49 @@
+### Verificar si se están haciendo las llamadas correctas a la API
+
+1. **Verificar el Endpoint**
+   - Asegúrate de que la URL de la API esté configurada correctamente en `API_CONFIG.url` dentro de `config.ts`. En tu caso, debería ser `http://localhost:3003/api` si estás trabajando en local.
+
+2. **Revisar las Llamadas a la API**
+   - Busca en tu código dónde se realizan las llamadas a la API. Por ejemplo, verifica si estás utilizando `fetch`, `axios` u otra librería para realizar las solicitudes.
+   - Asegúrate de que las rutas coincidan con las esperadas. En este caso, la ruta debería ser algo como `http://localhost:3003/api/pages/749af56b-c3bb-4138-93ef-df66456949c6`.
+
+3. **Hacer un Debugging de las Llamadas**
+   - Usa herramientas como el navegador (en la pestaña "Network") para verificar si las solicitudes están siendo enviadas correctamente.
+   - Revisa el estado de las respuestas (200, 404, 500, etc.) y el contenido de las mismas.
+
+4. **Agregar Logs en el Código**
+   - Agrega logs en el código donde se realiza la llamada a la API para verificar qué datos se están enviando y qué respuesta se está recibiendo. Por ejemplo:
+     ```typescript
+     console.log('URL:', url);
+     console.log('Response:', response);
+     ```
+
+5. **Probar la API Manualmente**
+   - Usa herramientas como Postman o cURL para probar manualmente el endpoint `http://localhost:3003/api/pages/749af56b-c3bb-4138-93ef-df66456949c6` y verificar que devuelve los datos esperados.
+
+6. **Verificar el Código del Cliente**
+   - Asegúrate de que el cliente (la web consumidora) esté utilizando correctamente los datos devueltos por la API. Si la API devuelve los datos correctamente pero no se muestran en la web, el problema podría estar en cómo se procesan o renderizan los datos.
+
+### Prompt para Verificar las Llamadas
+Si necesitas un prompt para verificar las llamadas, puedes usar algo como esto:
+
+```typescript
+// Verificar la URL de la API
+console.log('API URL:', API_CONFIG.url);
+
+// Realizar la llamada a la API
+fetch(`${API_CONFIG.url}/pages/749af56b-c3bb-4138-93ef-df66456949c6`)
+  .then(response => {
+    console.log('Status:', response.status);
+    return response.json();
+  })
+  .then(data => {
+    console.log('Data:', data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+```
+
+7. **Verificar el Archivo de Configuración**
+   - Asegúrate de que las variables de entorno (`NEXT_PUBLIC_API_URL`) estén configuradas correctamente y que no estén siendo sobrescritas en otro lugar.

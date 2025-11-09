@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PageDefinition } from '@/types/page';
-import { createPageSchema } from '@/lib/validation';
+import { createPageFormSchema } from '@/lib/validation';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Button } from '@/components/ui/Button';
@@ -27,7 +27,7 @@ export const PageForm: React.FC<PageFormProps> = ({
     setValue,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(createPageSchema),
+    resolver: zodResolver(createPageFormSchema),
     defaultValues: page
       ? {
           title: page.title,
@@ -64,19 +64,8 @@ export const PageForm: React.FC<PageFormProps> = ({
   }, [title, page, setValue]);
 
   const handleFormSubmit = (data: any) => {
-    // Convert keywords string to array
-    const keywordsString = data.metadata?.keywords || '';
-    const keywords = keywordsString
-      ? keywordsString.split(',').map((k: string) => k.trim()).filter((k: string) => k)
-      : undefined;
-
-    onSubmit({
-      ...data,
-      metadata: {
-        ...data.metadata,
-        keywords,
-      },
-    });
+    // El esquema ya convierte keywords de string a array automáticamente
+    onSubmit(data);
   };
 
   return (
