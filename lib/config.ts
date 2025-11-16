@@ -20,6 +20,8 @@ export const STORAGE_CONFIG = {
   dataDir: process.env.DATA_DIR || 'data',
   // Nombre del archivo donde se almacenan las páginas
   pagesFileName: process.env.PAGES_FILE_NAME || 'pages.json',
+  // Nombre del archivo donde se almacenan los componentes del registry
+  componentsFileName: process.env.COMPONENTS_FILE_NAME || 'components.json',
 } as const;
 
 // ============================================

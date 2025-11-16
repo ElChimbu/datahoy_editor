@@ -72,7 +72,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [editor]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);

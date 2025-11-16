@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPageBySlug, updatePageBySlug, deletePageBySlug } from '@/lib/storage';
 import { updatePageSchema } from '@/lib/validation';
 import { ApiResponse, PageDefinition } from '@/types/page';
+import { validateUUID } from '@/utils/validators';
 
 // GET /api/pages/[slug] - Obtener una página por slug
 export async function GET(
@@ -33,14 +34,23 @@ export async function GET(
   }
 }
 
-// PUT /api/pages/[slug] - Actualizar una página
+// PUT /api/pages/[id] - Actualizar una página
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const body = await request.json();
-    
+
+    // Validar el UUID del id
+    if (!validateUUID(params.id)) {
+      const response: ApiResponse<PageDefinition> = {
+        success: false,
+        error: 'El ID proporcionado no es un UUID válido.',
+      };
+      return NextResponse.json(response, { status: 400 });
+    }
+
     // Validar los datos
     const validationResult = updatePageSchema.safeParse(body);
     if (!validationResult.success) {
@@ -50,8 +60,8 @@ export async function PUT(
       };
       return NextResponse.json(response, { status: 400 });
     }
-    
-    const page = await updatePageBySlug(params.slug, validationResult.data);
+
+    const page = await updatePageBySlug(params.id, validationResult.data);
     const response: ApiResponse<PageDefinition> = {
       success: true,
       data: page,

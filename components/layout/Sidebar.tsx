@@ -25,6 +25,11 @@ export const Sidebar: React.FC = () => {
       label: 'Nueva Página',
       href: '/pages/new',
     },
+    {
+      icon: FileText,
+      label: 'Componentes',
+      href: '/components',
+    },
   ];
 
   return (

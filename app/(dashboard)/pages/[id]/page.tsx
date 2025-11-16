@@ -16,27 +16,27 @@ export default function EditPage() {
   const pageId = params.id as string;
 
   useEffect(() => {
+    const loadPage = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await getPageById(pageId);
+        if (result.success && result.data) {
+          setPage(result.data);
+        } else {
+          setError(result.error || 'Error al cargar la página');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error desconocido');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (pageId) {
       loadPage();
     }
   }, [pageId]);
-
-  const loadPage = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await getPageById(pageId);
-      if (result.success && result.data) {
-        setPage(result.data);
-      } else {
-        setError(result.error || 'Error al cargar la página');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSave = (savedPage: PageDefinition) => {
     setPage(savedPage);
