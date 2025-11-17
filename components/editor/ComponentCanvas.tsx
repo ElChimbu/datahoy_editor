@@ -17,6 +17,7 @@ interface ComponentCanvasProps {
   selectedComponentId: string | null;
   onSelect: (id: string | null) => void;
   editor: ReturnType<typeof usePageEditor>;
+  onDeleteComponent?: (id: string) => void;
 }
 
 const DroppableCanvas: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -36,6 +37,7 @@ export const ComponentCanvas: React.FC<ComponentCanvasProps> = ({
   selectedComponentId,
   onSelect,
   editor,
+  onDeleteComponent,
 }) => {
   const renderComponent = (component: ComponentDefinition) => (
     <SortableComponentItem
@@ -43,7 +45,7 @@ export const ComponentCanvas: React.FC<ComponentCanvasProps> = ({
       component={component}
       isSelected={selectedComponentId === component.id}
       onSelect={() => onSelect(component.id)}
-      onDelete={() => editor.deleteComponent(component.id)}
+      onDelete={() => (onDeleteComponent ? onDeleteComponent(component.id) : editor.deleteComponent(component.id))}
       onDuplicate={() => editor.duplicateComponent(component.id)}
     />
   );

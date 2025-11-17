@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { componentSchemas } from '@/lib/components.registry';
 import { ComponentType } from '@/types/page';
 import { Card } from '@/components/ui/Card';
 
@@ -67,15 +66,14 @@ export const ComponentPalette: React.FC = () => {
         Componentes
       </h2>
       <div className="space-y-2">
-        {componentSchemas.map((schema) => (
-          <DraggableComponent
-            key={schema.type}
-            type={schema.type}
-            name={schema.name}
-            description={schema.description}
-            icon={schema.icon}
-          />
-        ))}
+        <DraggableComponent
+          key="generic-component"
+          // Usamos 'Section' como tipo base genérico para que funcione con el editor actual
+          type={"Section" as ComponentType}
+          name="Componente"
+          description="Bloque genérico para construir la página"
+          icon="🧩"
+        />
       </div>
     </div>
   );

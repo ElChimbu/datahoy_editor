@@ -23,6 +23,7 @@ import { usePageEditor } from '@/hooks/usePageEditor';
 import { PageDefinition, ComponentDefinition, ComponentType } from '@/types/page';
 import { createPage, updatePage } from '@/lib/api';
 import { DragData } from '@/hooks/useDragAndDrop';
+import { useToast } from '@/components/ui/Toast';
 
 interface PageEditorProps {
   page?: PageDefinition;
@@ -31,6 +32,7 @@ interface PageEditorProps {
 
 export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
   const editor = usePageEditor(page);
+  const toast = useToast();
   const [showPageForm, setShowPageForm] = React.useState(!page);
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
@@ -138,7 +140,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
     try {
       if (editor.page && editor.page.id) {
         // Update existing page
-        const result = await updatePage(editor.page.id, data);
+        const result = await updatePage(editor.page.slug, data);
         if (result.success && result.data) {
           editor.updatePage(result.data);
           editor.setComponents(result.data.components);
@@ -189,7 +191,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
 
       let result;
       if (editor.page.id) {
-        result = await updatePage(editor.page.id, pageData);
+        result = await updatePage(editor.page.slug, pageData);
       } else {
         result = await createPage(pageData);
       }
@@ -200,13 +202,16 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
         if (onSave) {
           onSave(result.data);
         }
-        // Show success message (you can add a toast notification here)
-        alert('Página guardada exitosamente');
+        toast.success('Página guardada exitosamente');
       } else {
-        setSaveError(result.error || 'Error al guardar la página');
+        const msg = result.error || 'Error al guardar la página';
+        setSaveError(msg);
+        toast.error(msg);
       }
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Error desconocido');
+      const msg = error instanceof Error ? error.message : 'Error desconocido';
+      setSaveError(msg);
+      toast.error(msg);
     } finally {
       setIsSaving(false);
     }
@@ -214,8 +219,84 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
 
   const handlePreview = () => {
     if (!editor.page) return;
-    const previewUrl = `/preview/${editor.page.slug}`;
+    const previewUrl = `/${editor.page.slug}`;
     window.open(previewUrl, '_blank');
+  };
+
+  // Eliminar componente y persistir inmediatamente
+  const handleDeleteComponent = async (componentId: string) => {
+    // Helper para crear el nuevo árbol sin el componente
+    const deleteFromTree = (comps: ComponentDefinition[]): ComponentDefinition[] =>
+      comps
+        .filter((c) => c.id !== componentId)
+        .map((c) => ({
+          ...c,
+          children: c.children ? deleteFromTree(c.children) : c.children,
+        }));
+
+    const prevComponents = editor.components;
+    const nextComponents = deleteFromTree(prevComponents);
+    editor.setComponents(nextComponents);
+
+    if (!editor.page) return;
+
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const payload = {
+        slug: editor.page.slug,
+        title: editor.page.title,
+        metadata: editor.page.metadata,
+        components: nextComponents,
+      };
+      const doPersist = async () => updatePage(editor.page!.slug, payload);
+      const result = await doPersist();
+      if (result.success && result.data) {
+        editor.updatePage(result.data);
+        editor.setComponents(result.data.components);
+        if (onSave) onSave(result.data);
+        toast.success('Componente eliminado');
+      } else {
+        const msg = result.error || 'Error al guardar la página';
+        setSaveError(msg);
+        // rollback
+        editor.setComponents(prevComponents);
+        toast.error(msg, {
+          action: {
+            label: 'Reintentar',
+            onClick: async () => {
+              try {
+                setIsSaving(true);
+                const retry = await doPersist();
+                if (retry.success && retry.data) {
+                  editor.updatePage(retry.data);
+                  editor.setComponents(retry.data.components);
+                  if (onSave) onSave(retry.data);
+                  toast.success('Guardado');
+                } else {
+                  toast.error(retry.error || 'Falló nuevamente');
+                }
+              } finally {
+                setIsSaving(false);
+              }
+            },
+          },
+        });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error desconocido';
+      setSaveError(msg);
+      // rollback
+      editor.setComponents(prevComponents);
+      toast.error(msg, {
+        action: {
+          label: 'Reintentar',
+          onClick: () => handleDeleteComponent(componentId),
+        },
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -243,6 +324,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
             selectedComponentId={editor.selectedComponentId}
             onSelect={editor.setSelectedComponentId}
             editor={editor}
+            onDeleteComponent={handleDeleteComponent}
           />
           <ComponentInspector
             component={editor.findComponent(editor.selectedComponentId)}

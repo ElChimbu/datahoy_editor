@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import ToastRoot from '@/components/ui/ToastProvider';
 
 export const metadata: Metadata = {
   title: 'DataHoy Editor',
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <ToastRoot>{children}</ToastRoot>
+      </body>
     </html>
   );
 }

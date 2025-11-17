@@ -2,16 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPageBySlug, updatePageBySlug, deletePageBySlug } from '@/lib/storage';
 import { updatePageSchema } from '@/lib/validation';
 import { ApiResponse, PageDefinition } from '@/types/page';
-import { validateUUID } from '@/utils/validators';
 
-// GET /api/pages/[slug] - Obtener una página por slug
+// GET /api/pages/[id] - Obtener una página por slug (id=slug)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const page = await getPageBySlug(params.slug);
-    
+    const page = await getPageBySlug(params.id);
+
     if (!page) {
       const response: ApiResponse<PageDefinition> = {
         success: false,
@@ -19,7 +18,7 @@ export async function GET(
       };
       return NextResponse.json(response, { status: 404 });
     }
-    
+
     const response: ApiResponse<PageDefinition> = {
       success: true,
       data: page,
@@ -34,22 +33,13 @@ export async function GET(
   }
 }
 
-// PUT /api/pages/[id] - Actualizar una página
+// PUT /api/pages/[id] - Actualizar una página por slug (id=slug)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const body = await request.json();
-
-    // Validar el UUID del id
-    if (!validateUUID(params.id)) {
-      const response: ApiResponse<PageDefinition> = {
-        success: false,
-        error: 'El ID proporcionado no es un UUID válido.',
-      };
-      return NextResponse.json(response, { status: 400 });
-    }
 
     // Validar los datos
     const validationResult = updatePageSchema.safeParse(body);
@@ -77,13 +67,13 @@ export async function PUT(
   }
 }
 
-// DELETE /api/pages/[slug] - Eliminar una página
+// DELETE /api/pages/[id] - Eliminar una página por slug (id=slug)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    await deletePageBySlug(params.slug);
+    await deletePageBySlug(params.id);
     const response: ApiResponse<{ message: string }> = {
       success: true,
       data: { message: 'Página eliminada exitosamente' },
