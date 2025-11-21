@@ -1,53 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPages, createPage } from '@/lib/storage';
-import { createPageSchema } from '@/lib/validation';
-import { ApiResponse, PageDefinition } from '@/types/page';
+import { ApiResponse } from '@/types/page';
 
-// GET /api/pages - Listar todas las páginas
+// URL base del backend externo (incluye /api)
+const PROXY_API_URL = (process.env.PROXY_API_URL || 'http://localhost:3012/api').replace(/\/$/, '');
+
+// GET /api/pages - proxy listado
 export async function GET() {
   try {
-    const pages = await getPages();
-    const response: ApiResponse<PageDefinition[]> = {
-      success: true,
-      data: pages,
-    };
-    return NextResponse.json(response);
+    const upstream = await fetch(`${PROXY_API_URL}/pages`);
+    if (!upstream.ok) {
+      throw new Error(`Backend error ${upstream.status}`);
+    }
+    const data = await upstream.json();
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    const response: ApiResponse<PageDefinition[]> = {
-      success: false,
-      error: error instanceof Error ? error.message : 'Error desconocido',
-    };
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Error desconocido' }, { status: 500 });
   }
 }
 
-// POST /api/pages - Crear una nueva página
+// POST /api/pages - proxy creación
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validar los datos
-    const validationResult = createPageSchema.safeParse(body);
-    if (!validationResult.success) {
-      const response: ApiResponse<PageDefinition> = {
-        success: false,
-        error: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
-      };
-      return NextResponse.json(response, { status: 400 });
+    const upstream = await fetch(`${PROXY_API_URL}/pages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!upstream.ok) {
+      throw new Error(`Backend error ${upstream.status}`);
     }
-    
-    const page = await createPage(validationResult.data);
-    const response: ApiResponse<PageDefinition> = {
-      success: true,
-      data: page,
-    };
-    return NextResponse.json(response, { status: 201 });
+    const data = await upstream.json();
+    return NextResponse.json({ success: true, data });
   } catch (error) {
-    const response: ApiResponse<PageDefinition> = {
-      success: false,
-      error: error instanceof Error ? error.message : 'Error desconocido',
-    };
-    return NextResponse.json(response, { status: 400 });
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Error desconocido' }, { status: 500 });
+  }
+}
+
+// PUT /api/pages?id=ID - proxy actualización
+export async function PUT(request: NextRequest) {
+  try {
+    const id = request.nextUrl.searchParams.get('id');
+    if (!id) throw new Error('ID de página no proporcionado');
+    const body = await request.json();
+    const upstream = await fetch(`${PROXY_API_URL}/pages/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!upstream.ok) {
+      throw new Error(`Backend error ${upstream.status}`);
+    }
+    const data = await upstream.json();
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Error desconocido' }, { status: 500 });
+  }
+}
+
+// DELETE /api/pages?id=ID - proxy borrado
+export async function DELETE(request: NextRequest) {
+  try {
+    const id = request.nextUrl.searchParams.get('id');
+    if (!id) throw new Error('ID de página no proporcionado');
+    const upstream = await fetch(`${PROXY_API_URL}/pages/${id}`, { method: 'DELETE' });
+    if (!upstream.ok) {
+      throw new Error(`Backend error ${upstream.status}`);
+    }
+    const data = await upstream.json();
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Error desconocido' }, { status: 500 });
   }
 }
 

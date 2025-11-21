@@ -5,7 +5,11 @@ const nextConfig = {
     return [
       {
         source: '/backend/:path*',
-        destination: process.env.PROXY_API_URL || 'http://localhost:3003/api/:path*',
+        // Use PROXY_API_URL first, then BACKEND_URL, otherwise fallback to localhost:3003
+        destination: (() => {
+          const raw = process.env.PROXY_API_URL || process.env.BACKEND_URL || 'http://localhost:3003/api';
+          return `${String(raw).replace(/\/$/, '')}/:path*`;
+        })(),
       },
     ];
   },

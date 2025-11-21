@@ -12,6 +12,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Dark mode scrollbars (optional) */
+html.dark body::-webkit-scrollbar {
+  width: 10px;
+}
+html.dark body::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+html.dark body::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 6px;
+}
+html.dark body::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+
+}
+
 * {
   box-sizing: border-box;
 }

@@ -24,6 +24,8 @@ import { PageDefinition, ComponentDefinition, ComponentType } from '@/types/page
 import { createPage, updatePage } from '@/lib/api';
 import { DragData } from '@/hooks/useDragAndDrop';
 import { useToast } from '@/components/ui/Toast';
+import { getComponentSchema } from '@/lib/components.registry';
+import { nanoid } from 'nanoid';
 
 interface PageEditorProps {
   page?: PageDefinition;
@@ -36,6 +38,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
   const [showPageForm, setShowPageForm] = React.useState(!page);
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = React.useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeComponent, setActiveComponent] = useState<ComponentDefinition | null>(null);
 
@@ -85,6 +88,16 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
       if (component) {
         setActiveComponent(component);
       }
+    } else if (activeData.type === 'palette' && activeData.componentType) {
+      const schema = getComponentSchema(activeData.componentType);
+      if (schema) {
+        setActiveComponent({
+          type: activeData.componentType,
+          id: 'preview',
+          props: { ...schema.defaultProps },
+          children: schema.canHaveChildren ? [] : undefined,
+        });
+      }
     }
   };
 
@@ -99,9 +112,18 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
 
     // Dropping from palette to canvas
     if (activeData.type === 'palette' && activeData.componentType) {
-      // Check if dropped on canvas or on a component
+      const schema = getComponentSchema(activeData.componentType);
+      if (!schema) return;
+      const newComponent: ComponentDefinition = {
+        type: activeData.componentType,
+        id: nanoid(),
+        props: { ...schema.defaultProps },
+        children: schema.canHaveChildren ? [] : undefined,
+      };
       if (over.id === 'canvas' || (over.data.current as DragData)?.type === 'component') {
-        editor.addComponent(activeData.componentType);
+        const next = [...editor.components, newComponent];
+        editor.setComponents(next);
+        void persistComponents(next, undefined, true);
       }
       return;
     }
@@ -119,6 +141,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
           const [removed] = newComponents.splice(activeIndex, 1);
           newComponents.splice(overIndex, 0, removed);
           editor.setComponents(newComponents);
+          void persistComponents(newComponents, undefined, true);
         }
       } else if (over.id === 'canvas') {
         // Dropped on canvas directly, move to end
@@ -128,6 +151,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
           const [removed] = newComponents.splice(activeIndex, 1);
           newComponents.push(removed);
           editor.setComponents(newComponents);
+          void persistComponents(newComponents, undefined, true);
         }
       }
     }
@@ -199,6 +223,7 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
       if (result.success && result.data) {
         editor.updatePage(result.data);
         editor.setComponents(result.data.components);
+        setHasUnsavedChanges(false);
         if (onSave) {
           onSave(result.data);
         }
@@ -223,84 +248,70 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
     window.open(previewUrl, '_blank');
   };
 
-  // Eliminar componente y persistir inmediatamente
+  // Eliminar componente en memoria (no persiste automáticamente)
   const handleDeleteComponent = async (componentId: string) => {
-    // Helper para crear el nuevo árbol sin el componente
-    const deleteFromTree = (comps: ComponentDefinition[]): ComponentDefinition[] =>
-      comps
-        .filter((c) => c.id !== componentId)
-        .map((c) => ({
-          ...c,
-          children: c.children ? deleteFromTree(c.children) : c.children,
-        }));
+    // Delete locally using the editor hook and mark document as dirty
+    editor.deleteComponent(componentId);
+    setHasUnsavedChanges(true);
+    toast.info('Componente eliminado localmente. Presiona Guardar para persistir.');
+    // We intentionally don't call the backend here; saving happens on user action
+  };
 
-    const prevComponents = editor.components;
-    const nextComponents = deleteFromTree(prevComponents);
-    editor.setComponents(nextComponents);
+  // Duplicar componente y persistir inmediatamente
+  const handleDuplicateComponent = async (componentId: string) => {
+    const duplicateDeep = (comp: ComponentDefinition): ComponentDefinition => ({
+      ...comp,
+      id: nanoid(),
+      children: comp.children ? comp.children.map(duplicateDeep) : undefined,
+    });
+
+    const next = editor.components.flatMap((c) =>
+      c.id === componentId ? [c, duplicateDeep(c)] : [c]
+    );
+    const prev = editor.components;
+    editor.setComponents(next);
 
     if (!editor.page) return;
 
     setIsSaving(true);
-    setSaveError(null);
     try {
-      const payload = {
-        slug: editor.page.slug,
-        title: editor.page.title,
-        metadata: editor.page.metadata,
-        components: nextComponents,
-      };
-      const doPersist = async () => updatePage(editor.page!.slug, payload);
-      const result = await doPersist();
-      if (result.success && result.data) {
-        editor.updatePage(result.data);
-        editor.setComponents(result.data.components);
-        if (onSave) onSave(result.data);
-        toast.success('Componente eliminado');
-      } else {
-        const msg = result.error || 'Error al guardar la página';
-        setSaveError(msg);
-        // rollback
-        editor.setComponents(prevComponents);
-        toast.error(msg, {
-          action: {
-            label: 'Reintentar',
-            onClick: async () => {
-              try {
-                setIsSaving(true);
-                const retry = await doPersist();
-                if (retry.success && retry.data) {
-                  editor.updatePage(retry.data);
-                  editor.setComponents(retry.data.components);
-                  if (onSave) onSave(retry.data);
-                  toast.success('Guardado');
-                } else {
-                  toast.error(retry.error || 'Falló nuevamente');
-                }
-              } finally {
-                setIsSaving(false);
-              }
-            },
-          },
-        });
-      }
+      await persistComponents(next, 'Componente duplicado', true);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Error desconocido';
-      setSaveError(msg);
-      // rollback
-      editor.setComponents(prevComponents);
-      toast.error(msg, {
-        action: {
-          label: 'Reintentar',
-          onClick: () => handleDeleteComponent(componentId),
-        },
-      });
+      editor.setComponents(prev);
     } finally {
       setIsSaving(false);
     }
   };
 
+  // Persist helper
+  const persistComponents = async (
+    nextComponents: ComponentDefinition[],
+    successMsg?: string,
+    silentSuccess: boolean = false
+  ) => {
+    if (!editor.page) return;
+    const payload = {
+      slug: editor.page.slug,
+      title: editor.page.title,
+      metadata: editor.page.metadata,
+      components: nextComponents,
+    };
+    const result = await updatePage(editor.page.slug, payload);
+    if (result.success && result.data) {
+      editor.updatePage(result.data);
+      editor.setComponents(result.data.components);
+      setHasUnsavedChanges(false);
+      if (!silentSuccess && successMsg) toast.success(successMsg);
+      return;
+    }
+    const msg = result.error || 'Error al guardar cambios';
+    setSaveError(msg);
+    toast.error(msg);
+    throw new Error(msg);
+  };
+
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-950">
       <Header
         title={editor.page?.title || 'Nueva Página'}
         onSave={handleSave}
@@ -325,13 +336,14 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
             onSelect={editor.setSelectedComponentId}
             editor={editor}
             onDeleteComponent={handleDeleteComponent}
+            onDuplicateComponent={handleDuplicateComponent}
           />
           <ComponentInspector
             component={editor.findComponent(editor.selectedComponentId)}
             editor={editor}
           />
         </div>
-        <DragOverlay>
+        <DragOverlay zIndex={1000}>
           {activeComponent ? (
             <ComponentItem
               component={activeComponent}

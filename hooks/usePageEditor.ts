@@ -77,6 +77,25 @@ export function usePageEditor(initialPage?: PageDefinition) {
     saveToHistory();
   }, []);
 
+  // Reemplaza completamente las props del componente (útil para editor genérico)
+  const setComponentProps = useCallback((id: string, newProps: any) => {
+    setComponents((prev) => {
+      const updateInTree = (comps: ComponentDefinition[]): ComponentDefinition[] => {
+        return comps.map((comp) => {
+          if (comp.id === id) {
+            return { ...comp, props: { ...newProps } };
+          }
+          if (comp.children) {
+            return { ...comp, children: updateInTree(comp.children) };
+          }
+          return comp;
+        });
+      };
+      return updateInTree(prev);
+    });
+    saveToHistory();
+  }, []);
+
   const deleteComponent = useCallback((id: string) => {
     setComponents((prev) => {
       const deleteFromTree = (comps: ComponentDefinition[]): ComponentDefinition[] => {
@@ -259,6 +278,7 @@ export function usePageEditor(initialPage?: PageDefinition) {
     setSelectedComponentId,
     addComponent,
     updateComponent,
+    setComponentProps,
     deleteComponent,
     duplicateComponent,
     moveComponent,

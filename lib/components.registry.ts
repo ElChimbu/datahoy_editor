@@ -61,6 +61,15 @@ export const containerPropsSchema = z.object({
 
 export const componentSchemas: ComponentSchema[] = [
   {
+    type: 'Component',
+    name: 'Componente',
+    description: 'Bloque genérico para construir la página',
+    icon: '🧩',
+    defaultProps: {},
+    propsSchema: z.object({}),
+    canHaveChildren: true,
+  },
+  {
     type: 'Hero',
     name: 'Hero',
     description: 'Sección principal con título, subtítulo y CTA',

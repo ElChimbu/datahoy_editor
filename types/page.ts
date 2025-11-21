@@ -1,11 +1,4 @@
-export type ComponentType = 
-  | 'Hero'
-  | 'ArticleCard'
-  | 'ArticleList'
-  | 'Section'
-  | 'Text'
-  | 'Image'
-  | 'Container';
+export type ComponentType = string;
 
 export interface ComponentProps {
   [key: string]: any;

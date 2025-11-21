@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { ThemeToggle } from './ThemeToggle';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FileText, Home, Plus } from 'lucide-react';
@@ -35,7 +36,10 @@ export const Sidebar: React.FC = () => {
   return (
     <div className="w-64 bg-gray-900 text-white min-h-screen">
       <div className="p-4">
-        <h1 className="text-xl font-bold mb-6">DataHoy Editor</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold">DataHoy Editor</h1>
+          <ThemeToggle />
+        </div>
         <nav className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;

@@ -8,8 +8,23 @@
 // ============================================
 export const API_CONFIG = {
   // URL de la API backend
-  // Si está vacío, usa las rutas de API de Next.js (/api)
-  url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003/api',
+  // Prioridad de variables de entorno:
+  // 1. PROXY_API_URL (usada por las rutas server-side proxy)
+  // 2. BACKEND_URL (antigua variable usada por el cliente)
+  // 3. Fallback local para desarrollo
+  // Normalizamos la URL para que siempre termine en `/api`.
+  url: (() => {
+    // En cliente solo tenemos acceso a variables NEXT_PUBLIC_*
+    if (typeof window !== 'undefined') {
+      const pub = process.env.NEXT_PUBLIC_API_URL || '/api';
+      return pub.replace(/\/$/, '') || '/api';
+    }
+    const raw = process.env.PROXY_API_URL || process.env.BACKEND_URL || 'http://localhost:3003/api';
+    const trimmed = String(raw).replace(/\/$/, '');
+    if (trimmed.endsWith('/api')) return trimmed;
+    if (trimmed.includes('/api/')) return trimmed;
+    return `${trimmed}/api`;
+  })(),
 } as const;
 
 // ============================================

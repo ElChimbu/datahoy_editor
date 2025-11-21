@@ -5,6 +5,7 @@ import { ComponentDefinition } from '@/types/page';
 import { ComponentForm } from '@/components/forms/ComponentForm';
 import { Button } from '@/components/ui/Button';
 import { Trash2, Copy } from 'lucide-react';
+import { getComponentSchema } from '@/lib/components.registry';
 import { usePageEditor } from '@/hooks/usePageEditor';
 
 interface ComponentInspectorProps {
@@ -18,8 +19,8 @@ export const ComponentInspector: React.FC<ComponentInspectorProps> = ({
 }) => {
   if (!component) {
     return (
-      <div className="w-80 bg-gray-50 border-l border-gray-200 p-4">
-        <div className="text-center text-gray-400 py-12">
+      <div className="w-80 bg-gray-50 border-l border-gray-200 p-4 dark:bg-gray-900 dark:border-gray-800">
+        <div className="text-center text-gray-400 dark:text-gray-500 py-12">
           <p className="text-sm">Ningún componente seleccionado</p>
           <p className="text-xs mt-2">
             Selecciona un componente del canvas para editar sus propiedades
@@ -30,9 +31,9 @@ export const ComponentInspector: React.FC<ComponentInspectorProps> = ({
   }
 
   return (
-    <div className="w-80 bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto">
+    <div className="w-80 bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto dark:bg-gray-900 dark:border-gray-800">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-2">Propiedades</h3>
+        <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Propiedades</h3>
         <div className="flex gap-2 mb-4">
           <Button
             variant="secondary"
@@ -60,7 +61,14 @@ export const ComponentInspector: React.FC<ComponentInspectorProps> = ({
       </div>
       <ComponentForm
         component={component}
-        onUpdate={(props) => editor.updateComponent(component.id, props)}
+        onUpdate={(props) => {
+          const schema = getComponentSchema(component.type);
+          if (schema?.type === 'Component') {
+            editor.setComponentProps(component.id, props);
+          } else {
+            editor.updateComponent(component.id, props);
+          }
+        }}
       />
     </div>
   );

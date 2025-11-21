@@ -26,9 +26,9 @@ export const Header: React.FC<HeaderProps> = ({
   isLoading = false,
 }) => {
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 dark:bg-gray-900 dark:border-gray-700">
       <div className="flex items-center gap-4">
-        {title && <h1 className="text-xl font-semibold text-gray-900">{title}</h1>}
+        {title && <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>}
       </div>
       <div className="flex items-center gap-2">
         {onUndo && (

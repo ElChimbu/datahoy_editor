@@ -18,6 +18,7 @@ interface ComponentCanvasProps {
   onSelect: (id: string | null) => void;
   editor: ReturnType<typeof usePageEditor>;
   onDeleteComponent?: (id: string) => void;
+  onDuplicateComponent?: (id: string) => void;
 }
 
 const DroppableCanvas: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -38,6 +39,7 @@ export const ComponentCanvas: React.FC<ComponentCanvasProps> = ({
   onSelect,
   editor,
   onDeleteComponent,
+  onDuplicateComponent,
 }) => {
   const renderComponent = (component: ComponentDefinition) => (
     <SortableComponentItem
@@ -46,12 +48,12 @@ export const ComponentCanvas: React.FC<ComponentCanvasProps> = ({
       isSelected={selectedComponentId === component.id}
       onSelect={() => onSelect(component.id)}
       onDelete={() => (onDeleteComponent ? onDeleteComponent(component.id) : editor.deleteComponent(component.id))}
-      onDuplicate={() => editor.duplicateComponent(component.id)}
+      onDuplicate={() => (onDuplicateComponent ? onDuplicateComponent(component.id) : editor.duplicateComponent(component.id))}
     />
   );
 
   return (
-    <div className="flex-1 bg-white p-6 overflow-y-auto">
+    <div className="flex-1 bg-white p-6 overflow-y-auto dark:bg-gray-950">
       <div className="max-w-4xl mx-auto">
         <DroppableCanvas>
           <SortableContext
@@ -59,7 +61,7 @@ export const ComponentCanvas: React.FC<ComponentCanvasProps> = ({
             strategy={verticalListSortingStrategy}
           >
             {components.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 text-gray-400 dark:text-gray-500">
                 <p className="text-lg mb-2">Canvas vacío</p>
                 <p className="text-sm">
                   Arrastra componentes desde la paleta para comenzar

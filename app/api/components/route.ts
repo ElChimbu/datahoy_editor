@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '@/types/page';
 import { ComponentRegistryItem } from '@/types/components';
-import { getComponents, createComponent } from '@/lib/componentsStorage';
+
+const PROXY_API_URL = (process.env.PROXY_API_URL || 'http://localhost:3012/api').replace(/\/$/, '');
 
 // GET /api/components
 export async function GET() {
   try {
-    const data = await getComponents();
-    const response: ApiResponse<ComponentRegistryItem[]> = { success: true, data };
-    return NextResponse.json(response);
+    const upstream = await fetch(`${PROXY_API_URL}/components`);
+    if (!upstream.ok) {
+      throw new Error(`Backend error ${upstream.status}`);
+    }
+    const data = await upstream.json();
+    return NextResponse.json({ success: true, data });
   } catch (e) {
-    const response: ApiResponse<ComponentRegistryItem[]> = { success: false, error: e instanceof Error ? e.message : 'Error desconocido' };
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json({ success: false, error: e instanceof Error ? e.message : 'Error desconocido' }, { status: 500 });
   }
 }
 
@@ -19,11 +22,17 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const created = await createComponent(body);
-    const response: ApiResponse<ComponentRegistryItem> = { success: true, data: created };
-    return NextResponse.json(response, { status: 201 });
+    const upstream = await fetch(`${PROXY_API_URL}/components`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!upstream.ok) {
+      throw new Error(`Backend error ${upstream.status}`);
+    }
+    const data = await upstream.json();
+    return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (e) {
-    const response: ApiResponse<ComponentRegistryItem> = { success: false, error: e instanceof Error ? e.message : 'Error desconocido' };
-    return NextResponse.json(response, { status: 400 });
+    return NextResponse.json({ success: false, error: e instanceof Error ? e.message : 'Error desconocido' }, { status: 500 });
   }
 }

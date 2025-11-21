@@ -1,24 +1,26 @@
 import { z } from 'zod';
-import { ComponentType } from '@/types/page';
 
-export const componentTypeSchema = z.enum([
-  'Hero',
-  'ArticleCard',
-  'ArticleList',
-  'Section',
-  'Text',
-  'Image',
-  'Container',
-]);
+// Tipo de componente libre (se obtiene del registry o definido por el usuario)
+export const componentTypeSchema = z.string().min(1);
 
 export const componentPropsSchema = z.record(z.any());
 
-export const componentDefinitionSchema = z.object({
-  type: componentTypeSchema,
-  id: z.string(),
-  props: componentPropsSchema,
-  children: z.array(z.lazy(() => componentDefinitionSchema)).optional(),
-});
+// Tipado explícito para romper la recursividad en TS
+export type ComponentDefinitionInput = {
+  type: string;
+  id: string;
+  props: Record<string, any>;
+  children?: ComponentDefinitionInput[];
+};
+
+export const componentDefinitionSchema: z.ZodType<ComponentDefinitionInput> = z.lazy(() =>
+  z.object({
+    type: componentTypeSchema,
+    id: z.string(),
+    props: componentPropsSchema,
+    children: z.array(componentDefinitionSchema).optional(),
+  })
+);
 
 export const pageMetadataSchema = z.object({
   description: z.string().optional(),

@@ -1,18 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '@/types/page';
-import { ComponentRegistryItem } from '@/types/components';
-import { updateComponent } from '@/lib/componentsStorage';
+import { PageDefinition } from '@/types/page';
+
+const PROXY_API_URL = (process.env.PROXY_API_URL || 'http://localhost:3012/api').replace(/\/$/, '');
 
 // PUT /api/components/:id
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await request.json();
-    const updated = await updateComponent(params.id, body);
-    const response: ApiResponse<ComponentRegistryItem> = { success: true, data: updated };
-    return NextResponse.json(response);
+    const upstream = await fetch(`${PROXY_API_URL}/components/${params.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (upstream.status === 404) {
+      return NextResponse.json({ success: false, error: 'Componente no encontrado' }, { status: 404 });
+    }
+    if (!upstream.ok) {
+      throw new Error(`Backend error ${upstream.status}`);
+    }
+    const data = await upstream.json();
+    return NextResponse.json({ success: true, data } as ApiResponse<PageDefinition>);
   } catch (e) {
-    const response: ApiResponse<ComponentRegistryItem> = { success: false, error: e instanceof Error ? e.message : 'Error desconocido' };
-    const status = e instanceof Error && e.message.includes('no encontrado') ? 404 : 400;
-    return NextResponse.json(response, { status });
+    return NextResponse.json({ success: false, error: e instanceof Error ? e.message : 'Error desconocido' }, { status: 400 });
+  }
+}
+
+// DELETE /api/components/:id
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    // Proxy DELETE to the upstream components endpoint
+    const upstream = await fetch(`${PROXY_API_URL}/components/${params.id}`, { method: 'DELETE' });
+    if (upstream.status === 404) {
+      return NextResponse.json({ success: false, error: 'Componente no encontrado' }, { status: 404 });
+    }
+    if (!upstream.ok) {
+      throw new Error(`Backend error ${upstream.status}`);
+    }
+    const data = await upstream.json();
+    return NextResponse.json({ success: true, data } as ApiResponse<{ message: string }>);
+  } catch (e) {
+    return NextResponse.json({ success: false, error: e instanceof Error ? e.message : 'Error desconocido' }, { status: 500 });
   }
 }

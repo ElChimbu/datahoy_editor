@@ -17,7 +17,8 @@ export default function ComponentsListPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_CONFIG.url}/components`);
+        const base = API_CONFIG.url || '/api';
+        const res = await fetch(`${base.replace(/\/$/, '')}/components`);
         const json: ApiResponse<ComponentRegistryItem[]> = await res.json();
         if (json.success && json.data) setItems(json.data);
         else setError(json.error || 'Error cargando componentes');

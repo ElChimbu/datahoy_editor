@@ -38,12 +38,27 @@ export default function PagesList() {
     setError(null);
     try {
       const result = await getPages();
-      if (result.success && result.data) {
-        setPages(result.data);
-        setFilteredPages(result.data);
-      } else {
+      if (!result.success) {
         setError(result.error || 'Error al cargar las páginas');
+        return;
       }
+
+      // Normalizar la forma de los datos: puede venir un array directo
+      // o un objeto con { success, data: [...] } desde el backend externo.
+      const raw = result.data as any;
+      const normalized: PageDefinition[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : [];
+
+      if (!Array.isArray(normalized)) {
+        setError('Formato de respuesta inesperado');
+        return;
+      }
+
+      setPages(normalized);
+      setFilteredPages(normalized);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -74,7 +89,7 @@ export default function PagesList() {
       <div className="p-8">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando páginas...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Cargando páginas...</p>
         </div>
       </div>
     );
@@ -84,8 +99,8 @@ export default function PagesList() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Páginas</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Páginas</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Gestiona las páginas de tu sitio
           </p>
         </div>
@@ -110,14 +125,14 @@ export default function PagesList() {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700">
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
           {error}
         </div>
       )}
 
       {filteredPages.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
             {searchQuery ? 'No se encontraron páginas' : 'No hay páginas creadas'}
           </p>
           {!searchQuery && (
@@ -135,20 +150,20 @@ export default function PagesList() {
             <Card key={page.id} hover>
               <div className="flex flex-col h-full">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-2">{page.title}</h3>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <h3 className="font-semibold text-lg mb-2 dark:text-gray-100">{page.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     <span className="font-medium">Slug:</span> {page.slug}
                   </p>
                   {page.metadata?.description && (
-                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
                       {page.metadata.description}
                     </p>
                   )}
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-400 dark:text-gray-500">
                     {page.components.length} componente(s)
                   </div>
                 </div>
-                <div className="flex gap-2 mt-4 pt-4 border-t">
+                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <Link href={`/pages/${page.slug}`} className="flex-1">
                     <Button variant="primary" size="sm" className="w-full">
                       <Edit className="h-4 w-4 mr-1" />

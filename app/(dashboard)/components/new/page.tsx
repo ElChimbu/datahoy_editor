@@ -53,7 +53,8 @@ export default function NewComponentPage() {
         deprecated,
         definition: { subElements },
       };
-      const res = await fetch(`${API_CONFIG.url}/components`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const base = API_CONFIG.url || '/api';
+      const res = await fetch(`${base.replace(/\/$/, '')}/components`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const json: ApiResponse<ComponentRegistryItem> = await res.json();
       if (!json.success) throw new Error(json.error || 'Error al crear el componente');
       router.push('/components');

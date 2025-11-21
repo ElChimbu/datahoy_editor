@@ -44,32 +44,32 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-60"
       onClick={onClose}
     >
       <div
         className={cn(
-          'bg-white rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-auto',
+          'bg-white rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-auto dark:bg-gray-800',
           sizes[size]
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
             {title && (
-              <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
             )}
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors dark:text-gray-300 dark:hover:text-gray-100"
               >
                 <X className="h-5 w-5" />
               </button>
             )}
           </div>
         )}
-        <div className="p-4">{children}</div>
+        <div className="p-4 dark:text-gray-100">{children}</div>
       </div>
     </div>
   );

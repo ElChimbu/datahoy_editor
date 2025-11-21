@@ -61,15 +61,14 @@ const DraggableComponent: React.FC<DraggableComponentProps> = ({
 
 export const ComponentPalette: React.FC = () => {
   return (
-    <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">
-      <h2 className="text-lg font-semibold mb-4 text-gray-900">
+    <div className="w-64 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto dark:bg-gray-900 dark:border-gray-800">
+      <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
         Componentes
       </h2>
       <div className="space-y-2">
         <DraggableComponent
           key="generic-component"
-          // Usamos 'Section' como tipo base genérico para que funcione con el editor actual
-          type={"Section" as ComponentType}
+          type={"Component" as ComponentType}
           name="Componente"
           description="Bloque genérico para construir la página"
           icon="🧩"
