@@ -22,6 +22,8 @@ import { Modal } from '@/components/ui/Modal';
 import { usePageEditor } from '@/hooks/usePageEditor';
 import { PageDefinition, ComponentDefinition, ComponentType } from '@/types/page';
 import { createPage, updatePage } from '@/lib/api';
+import { validateDynamicComponent } from '@/lib/validation';
+// Duplicate imports removed (kept the earlier imports)
 import { DragData } from '@/hooks/useDragAndDrop';
 import { useToast } from '@/components/ui/Toast';
 import { getComponentSchema } from '@/lib/components.registry';
@@ -213,6 +215,22 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
         components: editor.components,
       };
 
+      // Validar componentes dinámicos antes de persistir
+      for (const comp of pageData.components) {
+        if (comp.type === 'Component') {
+          const validation = validateDynamicComponent({ type: comp.type, id: comp.id, props: comp.props, children: undefined });
+          if (!validation.success) {
+            const issues = validation.error.issues.map(i => i.path.join('.') + ': ' + i.message).join('\n');
+            const msg = 'Error de validación en componente dinámico:\n' + issues;
+            setSaveError(msg);
+            toast.error('Errores de validación en componente (ver consola)');
+            console.error(msg);
+            setIsSaving(false);
+            return;
+          }
+        }
+      }
+
       let result;
       if (editor.page.id) {
         result = await updatePage(editor.page.slug, pageData);
@@ -296,6 +314,20 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
       metadata: editor.page.metadata,
       components: nextComponents,
     };
+    // Validar dinámicos antes de update parcial
+    for (const comp of payload.components) {
+      if (comp.type === 'Component') {
+        const validation = validateDynamicComponent({ type: comp.type, id: comp.id, props: comp.props, children: undefined });
+        if (!validation.success) {
+          const issues = validation.error.issues.map(i => i.path.join('.') + ': ' + i.message).join('\n');
+          const msg = 'Error de validación en componente dinámico:\n' + issues;
+          setSaveError(msg);
+          toast.error('Errores de validación en componente (ver consola)');
+          console.error(msg);
+          return;
+        }
+      }
+    }
     const result = await updatePage(editor.page.slug, payload);
     if (result.success && result.data) {
       editor.updatePage(result.data);
@@ -328,21 +360,13 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex-1 flex overflow-hidden">
-          <ComponentPalette />
-          <ComponentCanvas
-            components={editor.components}
-            selectedComponentId={editor.selectedComponentId}
-            onSelect={editor.setSelectedComponentId}
-            editor={editor}
-            onDeleteComponent={handleDeleteComponent}
-            onDuplicateComponent={handleDuplicateComponent}
-          />
-          <ComponentInspector
-            component={editor.findComponent(editor.selectedComponentId)}
-            editor={editor}
-          />
-        </div>
+        <ResizableEditor
+          editor={editor}
+          selectedId={editor.selectedComponentId}
+          onSelect={editor.setSelectedComponentId}
+          onDeleteComponent={handleDeleteComponent}
+          onDuplicateComponent={handleDuplicateComponent}
+        />
         <DragOverlay zIndex={1000}>
           {activeComponent ? (
             <ComponentItem
@@ -377,6 +401,76 @@ export const PageEditor: React.FC<PageEditorProps> = ({ page, onSave }) => {
           </div>
         )}
       </Modal>
+    </div>
+  );
+};
+
+interface ResizableEditorProps {
+  editor: ReturnType<typeof usePageEditor>;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  onDeleteComponent: (id: string) => void;
+  onDuplicateComponent: (id: string) => void;
+}
+
+const ResizableEditor: React.FC<ResizableEditorProps> = ({ editor, selectedId, onSelect, onDeleteComponent, onDuplicateComponent }) => {
+  const [width, setWidth] = React.useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('inspectorWidth');
+      if (stored) return Math.min(Math.max(Number(stored), 260), 640);
+    } catch {}
+    return 320; // default
+  });
+  const [dragging, setDragging] = React.useState(false);
+  const startXRef = React.useRef(0);
+  const startWidthRef = React.useRef(0);
+
+  React.useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: PointerEvent) => {
+      const delta = startXRef.current - e.clientX; // mover izquierda aumenta ancho
+      const next = Math.min(Math.max(startWidthRef.current + delta, 260), 640);
+      setWidth(next);
+    };
+    const onUp = () => {
+      setDragging(false);
+      try { localStorage.setItem('inspectorWidth', String(width)); } catch {}
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [dragging, width]);
+
+  const startDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    startXRef.current = e.clientX;
+    startWidthRef.current = width;
+    setDragging(true);
+  };
+
+  return (
+    <div className="flex-1 flex overflow-hidden">
+      <ComponentPalette />
+      <ComponentCanvas
+        components={editor.components}
+        selectedComponentId={selectedId}
+        onSelect={onSelect}
+        editor={editor}
+        onDeleteComponent={onDeleteComponent}
+        onDuplicateComponent={onDuplicateComponent}
+      />
+      <div
+        className="relative flex-shrink-0" 
+        style={{ width }}
+      >
+        <div
+          onPointerDown={startDrag}
+          className={"absolute left-0 top-0 h-full w-1 cursor-col-resize z-10 " + (dragging ? 'bg-primary' : 'bg-transparent hover:bg-primary/40')}
+        />
+        <ComponentInspector component={editor.findComponent(selectedId)} editor={editor} />
+      </div>
     </div>
   );
 };

@@ -19,7 +19,7 @@ export const ComponentInspector: React.FC<ComponentInspectorProps> = ({
 }) => {
   if (!component) {
     return (
-      <div className="w-80 bg-gray-50 border-l border-gray-200 p-4 dark:bg-gray-900 dark:border-gray-800">
+      <div className="w-full bg-gray-50 border-l border-gray-200 p-4 dark:bg-gray-900 dark:border-gray-800 overflow-x-hidden">
         <div className="text-center text-gray-400 dark:text-gray-500 py-12">
           <p className="text-sm">Ningún componente seleccionado</p>
           <p className="text-xs mt-2">
@@ -31,7 +31,7 @@ export const ComponentInspector: React.FC<ComponentInspectorProps> = ({
   }
 
   return (
-    <div className="w-80 bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto dark:bg-gray-900 dark:border-gray-800">
+    <div className="w-full h-full bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto dark:bg-gray-900 dark:border-gray-800 overflow-x-hidden">
       <div className="mb-4">
         <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Propiedades</h3>
         <div className="flex gap-2 mb-4">
